@@ -1,0 +1,30 @@
+{
+  "name": "bc-data-update",
+  "version": "1.0.0",
+  "description": "Microservice for retrieving data from the Big Change Apps platform and persisting to a NoSQL Database",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mcsquaredw/bc-data-update.git"
+  },
+  "author": "MCWake",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mcsquaredw/bc-data-update/issues"
+  },
+  "homepage": "https://github.com/mcsquaredw/bc-data-update#readme",
+  "dependencies": {
+    "axios": "^0.19.0",
+    "dotenv": "^8.0.0",
+    "eslint": "^6.1.0",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-plugin-import": "^2.18.2",
+    "logdown": "^3.2.8",
+    "mocha": "^6.2.0",
+    "moment": "^2.24.0",
+    "mongodb": "^3.3.0"
+  }
+}
