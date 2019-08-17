@@ -4,7 +4,8 @@
   "description": "Microservice for retrieving data from the Big Change Apps platform and persisting to a NoSQL Database",
   "main": "index.js",
   "scripts": {
-    "test": "mocha test/*"
+    "test": "mocha test/*",
+    "run": "node index.js"
   },
   "repository": {
     "type": "git",
