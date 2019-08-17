@@ -4,7 +4,7 @@ const moment = require('moment');
 
 module.exports = () => {
   const baseUrl = (username, password, apiKey) => {
-    assert(username, 'username must not be set');
+    assert(username, 'username must not be empty');
     assert(password, 'password must not be empty');
     assert(apiKey, 'api key must not be empty');
 
@@ -13,6 +13,8 @@ module.exports = () => {
 
   const requestSuccess = (response) => response.status === 200;
 
+  const errorMessage = (name, message) => `${name} - ${message}`;
+
   const getJobs = async (username, password, apiKey, start, end) => {
     const result = {
       error: null,
@@ -20,8 +22,10 @@ module.exports = () => {
     };
 
     try {
-      assert(start instanceof moment, 'start must be instance of moment');
-      assert(end instanceof moment, 'end must be instance of moment');
+      assert(start, 'start date must be supplied');
+      assert(start instanceof moment, 'start date must be instance of moment');
+      assert(end, 'end date must be supplied');
+      assert(end instanceof moment, 'end date must be instance of moment');
 
       const response = await axios.get(
         `${baseUrl(username, password, apiKey)}&action=jobs&start=${start.format('YYYY-MM-DD')}&end=${end.format('YYYY-MM-DD')}`,
@@ -33,7 +37,7 @@ module.exports = () => {
         result.error = response.error;
       }
     } catch (err) {
-      result.error = err;
+      result.error = errorMessage(err.name, err.message);
     }
 
     return result;
@@ -58,7 +62,7 @@ module.exports = () => {
         result.error = response.error;
       }
     } catch (err) {
-      result.error = err;
+      result.error = errorMessage(err.name, err.message);
     }
 
     return result;
@@ -83,7 +87,7 @@ module.exports = () => {
         result.error = response.error;
       }
     } catch (err) {
-      result.error = err;
+      result.error = errorMessage(err.name, err.message);
     }
 
     return result;
