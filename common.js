@@ -58,7 +58,6 @@ module.exports = () => {
     try {
       assert(jobId, 'jobId must not be empty');
 
-
       const response = _.debounce(await axios.get(
         `${baseUrl(username, password, apiKey)}&action=job&jobid=${jobId}&flaghistory=1`,
       ), 5000);
@@ -86,7 +85,7 @@ module.exports = () => {
 
       const response = _.debounce(await axios.get(
         `${baseUrl(username, password, apiKey)}&action=jobworksheets&jobid=${jobId}&wsPhotos=None`,
-      ));
+      ), 5000);
 
       if (requestSuccess(response)) {
         result.data = response.data.Result;
@@ -100,9 +99,92 @@ module.exports = () => {
     return result;
   };
 
+  const getUpdatedJobDetailsByDbId = async (db, dbIds) => {
+    const completeFlags = ['Paid', 'SF01', 'SF03', 'SF04'];
+
+    try {
+      if (dbIds) {
+        Promise.all(
+          dbIds.map(async (_id) => {
+            const savedJob = await db.collection('jobs').findOne({ _id });
+
+            if (
+              (savedJob.Type.includes('Fitting') || savedJob.Type.includes('Survey'))
+              && savedJob.RealEnd
+              && !completeFlags.find(
+                (flag) => savedJob.CurrentFlag && !savedJob.CurrentFlag.includes(flag),
+              )
+            ) {
+              logger.info('Job details and worksheets will be updated');
+
+              const detailsResult = await getJobDetails(savedJob.JobId);
+              const worksheetResult = !savedJob.worksheets || savedJob.worksheets.length === 0
+                ? await getWorksheetsForJob(savedJob.JobId)
+                : { result: savedJob.worksheets };
+              const updatedJob = {
+                ...savedJob,
+                ...detailsResult.result,
+                worksheets:
+                  worksheetResult.result && worksheetResult.result.length > 0
+                    ? worksheetResult.result
+                    : [{ Question: 'Worksheets for this job', AnswerText: 'None' }],
+              };
+
+              await db.collection('jobs').updateOne({ _id }, { $set: updatedJob });
+
+              logger.info('Job update successful');
+              return updatedJob;
+            }
+
+            return null;
+          }),
+        ).catch((err) => {
+          logger.error(err);
+        });
+      }
+    } catch (err) {
+      logger.error(err);
+    }
+  };
+
+  const updateDatabase = async (db, jobData) => {
+    try {
+      const updateJobResult = await db.collection('jobs').bulkWrite(
+        jobData.map((job) => {
+          const operation = {
+            updateOne: {
+              filter: { JobId: job.JobId },
+              update: { $set: job },
+              upsert: true,
+            },
+          };
+
+          return operation;
+        }),
+      );
+      const { insertedIds, upsertedIds } = updateJobResult;
+      const jobsNotDownloaded = await db
+        .collection('jobs')
+        .find({
+          $where: 'if(!this.worksheets || !this.FlagHistory){return this;}',
+        })
+        .project({ _id: 1 })
+        .toArray();
+
+      await getUpdatedJobDetailsByDbId(db, Object.values(insertedIds));
+      await getUpdatedJobDetailsByDbId(db, Object.values(upsertedIds));
+      await getUpdatedJobDetailsByDbId(db, jobsNotDownloaded.map((job) => job._id));
+    } catch (err) {
+      logger.error(err);
+    }
+
+    return null;
+  };
+
   return {
     getJobs,
     getJobDetails,
     getWorksheetsForJob,
+    updateDatabase,
   };
 };
