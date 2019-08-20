@@ -58,7 +58,7 @@ module.exports = () => {
     try {
       assert(jobId, 'jobId must not be empty');
 
-      const response = _.debounce(await axios.get(
+      const response = _.throttle(await axios.get(
         `${baseUrl(username, password, apiKey)}&action=job&jobid=${jobId}&flaghistory=1`,
       ), 5000);
 
@@ -83,7 +83,7 @@ module.exports = () => {
     try {
       assert(jobId, 'jobId must not be empty');
 
-      const response = _.debounce(await axios.get(
+      const response = _.throttle(await axios.get(
         `${baseUrl(username, password, apiKey)}&action=jobworksheets&jobid=${jobId}&wsPhotos=None`,
       ), 5000);
 
@@ -173,6 +173,7 @@ module.exports = () => {
 
       await getUpdatedJobDetailsByDbId(db, Object.values(insertedIds));
       await getUpdatedJobDetailsByDbId(db, Object.values(upsertedIds));
+      // eslint-disable-next-line no-underscore-dangle
       await getUpdatedJobDetailsByDbId(db, jobsNotDownloaded.map((job) => job._id));
     } catch (err) {
       logger.error(err);

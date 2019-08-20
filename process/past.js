@@ -25,7 +25,7 @@ MongoClient.connect(process.env.mongoDbUri, { useNewUrlParser: true }, (dbErr, c
 
     logger.info(`Checking past jobs for updates between ${start.format('DD/MM/YYYY h:mm:ss')} and ${end.format('DD/MM/YYYY h:mm:ss')}`);
 
-    _.debounce(() => common.getJobs(
+    _.throttle(() => common.getJobs(
       process.env.bcUsername,
       process.env.bcPassword,
       process.env.bcApiKey,
