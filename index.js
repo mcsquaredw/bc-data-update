@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const logger = require('logdown')('index');
 
 logger.state.isEnabled = true;
@@ -11,4 +13,6 @@ aliveMessage();
 
 process.on('SIGINT', (signal) => {
   logger.info(`${signal} - Scheduled jobs platform stopping`);
+
+  process.exit();
 });
