@@ -5,8 +5,6 @@ const { MongoClient } = require('mongodb');
 const logger = require('logdown')('live');
 const moment = require('moment');
 
-const notifications = require('../notifications');
-
 const schedule = require('../api/schedule');
 
 const now = moment();
@@ -35,9 +33,7 @@ if (weekday < 6 && hour > 7 && hour < 19) {
     ).then((result) => {
       const { error } = result;
 
-      if (!error) {
-        notifications(db).processNotifications();
-      } else {
+      if (error) {
         logger.error(`Error occurred while retrieving jobs: ${error}`);
       }
     }).catch((err) => {

@@ -4,7 +4,6 @@ require('dotenv').config();
 const { diff } = require('deep-object-diff');
 const logger = require('logdown')('schedule');
 
-const notifications = require('../notifications');
 const update = require('./update');
 const bigChange = require('./big-change')(process.env.bcUsername, process.env.bcPassword, process.env.bcApiKey);
 
@@ -46,7 +45,6 @@ module.exports = (db) => {
         const updateOperations = await Promise.all(todayUpdates);
 
         await db.collection('jobs').bulkWrite(updateOperations.filter((op) => op));
-        await notifications(db).processNotifications();
       } else {
         result.error = err;
       }
@@ -54,7 +52,7 @@ module.exports = (db) => {
       result.error = err;
     }
 
-    logger.info(`----- UPDATE ${start.format('DD/MM/YYYY HH:mm:ss')} to ${end.format('DD/MM/YYYY HH:mm:ss')}`);
+    logger.info(`----- END UPDATE ${start.format('DD/MM/YYYY HH:mm:ss')} to ${end.format('DD/MM/YYYY HH:mm:ss')}`);
 
     return result;
   };
