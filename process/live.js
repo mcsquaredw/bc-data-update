@@ -6,6 +6,8 @@ const logger = require('logdown')('live');
 const moment = require('moment');
 
 const schedule = require('../api/schedule');
+const notifications = require('../api/notifications');
+const reports = require('../api/reports');
 
 const now = moment();
 const start = now.clone().startOf('day');
@@ -35,6 +37,9 @@ if (weekday < 6 && hour > 7 && hour < 19) {
 
       if (error) {
         logger.error(`Error occurred while retrieving jobs: ${error}`);
+      } else {
+        notifications(db).processNotifications();
+        reports(db).processReports();
       }
     }).catch((err) => {
       logger.error(`Error occurred while updating jobs: ${err}`);

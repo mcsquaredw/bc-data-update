@@ -30,6 +30,7 @@
     "eslint-plugin-import": "^2.18.2",
     "lodash": "^4.17.15",
     "logdown": "^3.2.8",
+    "mailgun-js": "^0.22.0",
     "mocha": "^6.2.0",
     "moment": "^2.24.0",
     "mongodb": "^3.3.0",

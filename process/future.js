@@ -7,6 +7,8 @@ const moment = require('moment');
 const { RateLimit } = require('async-sema');
 
 const schedule = require('../api/schedule');
+const notifications = require('../api/notifications');
+const reports = require('../api/reports');
 
 logger.state.isEnabled = true;
 
@@ -37,6 +39,9 @@ MongoClient.connect(process.env.mongoDbUri, {
 
         if (error) {
           logger.error(`Error occurred while retrieving jobs: ${error}`);
+        } else {
+          notifications(db).processNotifications();
+          reports(db).processReports();
         }
       }).catch((err) => {
         logger.error(`Error occurred while updating jobs: ${err}`);
