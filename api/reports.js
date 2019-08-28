@@ -13,7 +13,7 @@ module.exports = (db) => {
     companyLogo,
     companyName,
     techSupportEmail,
-    to,
+    reportDestination,
   } = process.env;
 
   async function processDailyReport(reportType, jobs, emailSubject, emailText) {
@@ -30,7 +30,7 @@ module.exports = (db) => {
         reportDate: moment().format('DD/MM/YYYY'),
       };
 
-      const emailResult = email.sendEmail(
+      const emailResult = await email.sendEmail(
         companyName,
         emailSubject,
         emailText,
@@ -41,7 +41,7 @@ module.exports = (db) => {
           headerTemplate(emailSubject, '#fd9c81'),
           reportTemplate(emailText, jobs),
         ),
-        to,
+        reportDestination,
         inline,
       );
 
