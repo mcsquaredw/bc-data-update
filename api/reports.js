@@ -7,6 +7,8 @@ const emailTemplateModule = require('./email-template');
 const headerTemplate = require('./email-template/header-template');
 const reportTemplate = require('./email-template/report-template');
 
+logger.state.isEnabled = true;
+
 module.exports = (db) => {
   const email = emailModule();
   const {

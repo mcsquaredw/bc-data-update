@@ -20,12 +20,12 @@
   "dependencies": {
     "@sendgrid/mail": "^6.4.0",
     "async": "^3.1.0",
-    "async-sema": "^3.0.0",
+    "async-sema": "^3.0.1",
     "axios": "^0.19.0",
     "chai": "^4.2.0",
     "deep-object-diff": "^1.1.0",
-    "dotenv": "^8.0.0",
-    "eslint": "^6.1.0",
+    "dotenv": "^8.1.0",
+    "eslint": "^6.3.0",
     "eslint-config-airbnb-base": "^14.0.0",
     "eslint-plugin-import": "^2.18.2",
     "lodash": "^4.17.15",
@@ -33,7 +33,7 @@
     "mailgun-js": "^0.22.0",
     "mocha": "^6.2.0",
     "moment": "^2.24.0",
-    "mongodb": "^3.3.0",
+    "mongodb": "^3.3.2",
     "sendgrid": "^5.2.3"
   }
 }
