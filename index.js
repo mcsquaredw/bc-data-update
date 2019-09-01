@@ -1,6 +1,7 @@
 /* eslint-disable no-plusplus */
 require('dotenv').config();
 
+const http = require('http');
 const assert = require('assert');
 const { MongoClient } = require('mongodb');
 const logger = require('logdown')('live');
@@ -10,9 +11,10 @@ const { RateLimit } = require('async-sema');
 const schedule = require('./api/schedule');
 const notifications = require('./api/notifications');
 const reports = require('./api/reports');
+const port = process.env.PORT || 3000;
 
 const limit = RateLimit(1, { timeUnit: 30000 });
-const { mongoDbUri, mongoDbName, companyName } = process.env;
+const { mongoDbUri, mongoDbName } = process.env;
 
 logger.state.isEnabled = true;
 assert(mongoDbUri, 'MongoDB URI Not Present');
@@ -121,4 +123,12 @@ MongoClient.connect(mongoDbUri, {
   updateLive();
   updatePast();
   updateFuture();
+});
+
+http.createServer((req, res) => {
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'text/plain');
+  res.end('App running');
+}).listen(port, () => {
+  logger.info('App running');
 });
