@@ -7,17 +7,35 @@ const { RateLimit } = require('async-sema');
 logger.state.isEnabled = true;
 
 module.exports = (username, password, apiKey) => {
-  assert(username, 'username must not be empty');
-  assert(password, 'password must not be empty');
-  assert(apiKey, 'api key must not be empty');
-
   const limit = RateLimit(1, { timeUnit: 5000 });
-
-  const baseUrl = () => `https://webservice.bigchangeapps.com/v01/services.ashx?login=${username}&pwd=${password}&key=${apiKey}`;
-
+  const baseUrl = `https://webservice.bigchangeapps.com/v01/services.ashx?login=${username}&pwd=${password}&key=${apiKey}`;
   const requestSuccess = (response) => response.status === 200;
-
   const errorMessage = (name, message) => `${name} - ${message}`;
+
+  const getFlags = async () => {
+    let error;
+    let result;
+
+    try {
+      logger.info('Getting flags');
+
+      const response = await axios.get(`${baseUrl}&action=tags`);
+
+      if (response.status === 200) {
+        result = response.data.Result;
+      } else {
+        ({ error } = { response });
+        logger.error(error);
+      }
+    } catch (err) {
+      error = err;
+    }
+
+    return {
+      error,
+      result,
+    };
+  };
 
   const getJobs = async (start, end) => {
     const result = {
@@ -34,7 +52,7 @@ module.exports = (username, password, apiKey) => {
       await limit();
 
       const response = await axios.get(
-        `${baseUrl(username, password, apiKey)}&action=jobs&start=${start.format('YYYY-MM-DD')}&end=${end.format('YYYY-MM-DD HH:mm:ss')}&unallocated=false`,
+        `${baseUrl}&action=jobs&start=${start.format('YYYY-MM-DD')}&end=${end.format('YYYY-MM-DD HH:mm:ss')}&unallocated=false`,
       );
 
       if (requestSuccess(response)) {
@@ -65,7 +83,7 @@ module.exports = (username, password, apiKey) => {
       await limit();
 
       const response = await axios.get(
-        `${baseUrl(username, password, apiKey)}&action=job&jobid=${jobId}&flaghistory=1`,
+        `${baseUrl}&action=job&jobid=${jobId}&flaghistory=1`,
       );
 
       if (requestSuccess(response)) {
@@ -94,7 +112,7 @@ module.exports = (username, password, apiKey) => {
       await limit();
 
       const response = await axios.get(
-        `${baseUrl(username, password, apiKey)}&action=jobworksheets&jobid=${jobId}&wsPhotos=None`,
+        `${baseUrl}&action=jobworksheets&jobid=${jobId}&wsPhotos=None`,
       );
 
       if (requestSuccess(response)) {
@@ -111,9 +129,36 @@ module.exports = (username, password, apiKey) => {
     return result;
   };
 
+  const getResources = async () => {
+    let error;
+    let result;
+
+    try {
+      logger.info('Getting resources');
+
+      const response = await axios.get(`${baseUrl}&action=live`);
+
+      if (response.status === 200) {
+        result = response.data.Result;
+      } else {
+        ({ error } = { response });
+        logger.error(error);
+      }
+    } catch (err) {
+      error = err;
+    }
+
+    return {
+      error,
+      result,
+    };
+  };
+
   return {
     getJobs,
     getJobDetails,
     getWorksheetsForJob,
+    getFlags,
+    getResources,
   };
 };

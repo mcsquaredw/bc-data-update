@@ -2,21 +2,21 @@ require('dotenv').config();
 const moment = require('moment');
 const logger = require('logdown')('reports');
 
-const emailModule = require('./email');
+const email = require('./email');
 const emailTemplateModule = require('./email-template');
 const headerTemplate = require('./email-template/header-template');
 const reportTemplate = require('./email-template/report-template');
 
 logger.state.isEnabled = true;
 
-module.exports = (db) => {
-  const email = emailModule();
+module.exports = (db, organisation) => {
   const {
-    companyLogo,
-    companyName,
+    mailFrom,
+    reportsTo,
     techSupportEmail,
-    reportDestination,
-  } = process.env;
+    companyLogo,
+    name,
+  } = organisation;
 
   async function processDailyReport(reportType, jobs, emailSubject, emailText) {
     let reportRun = await db
@@ -33,17 +33,18 @@ module.exports = (db) => {
       };
 
       const emailResult = await email.sendEmail(
-        companyName,
+        name,
         emailSubject,
         emailText,
         emailTemplateModule(
-          companyName,
+          name,
           companyLogo,
           techSupportEmail,
           headerTemplate(emailSubject, '#fd9c81'),
           reportTemplate(emailText, jobs),
         ),
-        reportDestination,
+        mailFrom,
+        reportsTo,
         inline,
       );
 

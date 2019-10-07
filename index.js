@@ -4,65 +4,67 @@ require('dotenv').config();
 const http = require('http');
 const assert = require('assert');
 const { MongoClient } = require('mongodb');
-const logger = require('logdown')('live');
+const logger = require('logdown')('index');
 const moment = require('moment');
 const { RateLimit } = require('async-sema');
 
 const schedule = require('./api/schedule');
 const notifications = require('./api/notifications');
 const reports = require('./api/reports');
-const port = process.env.PORT || 3000;
+
+const port = process.env.PORT || 3001;
 
 const limit = RateLimit(1, { timeUnit: 30000 });
-const { mongoDbUri, mongoDbName } = process.env;
+const { MONGODB_URI, MONGODB_DBNAME } = process.env;
 
 logger.state.isEnabled = true;
-assert(mongoDbUri, 'MongoDB URI Not Present');
-assert(mongoDbName, 'MongoDB Database Name not present');
 
-function update(db, start, end) {
+function update(db, start, end, organisation) {
   schedule(db).updateRange(
     start,
     end,
+    organisation,
   ).then((result) => {
     const { error } = result;
 
     if (error) {
       logger.error(`Error occurred while retrieving jobs: ${error}`);
     } else {
-      notifications(db).processNotifications();
-      reports(db).processReports();
+      notifications(db, organisation).processNotifications();
+      reports(db, organisation).processReports();
     }
   }).catch((err) => {
     logger.error(`Error occurred while updating jobs: ${err}`);
   });
 }
 
-MongoClient.connect(mongoDbUri, {
+MongoClient.connect(MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 }, (dbErr, client) => {
   assert.equal(null, dbErr);
 
-  const db = client.db(mongoDbName);
+  const db = client.db(MONGODB_DBNAME);
 
-  function updateLive() {
+  function updateLive(organisation) {
     const now = moment();
     const weekday = now.isoWeekday();
     const hour = now.hour();
     const start = now.clone().startOf('day');
     const end = start.clone().endOf('day');
 
-    if (weekday < 6 && hour > 7 && hour < 19) {
-      update(db, start, end);
-    } else {
-      logger.info('Will not auto-update jobs for today out of office hours or at weekends - daily past and future job updates will still occur');
-    }
+    // if (weekday < 6 && hour > 7 && hour < 19) {
+    update(db, start, end, organisation);
+    // } else {
+    logger.info('Will not auto-update jobs for today out of office hours or at weekends - daily past and future job updates will still occur');
+    // }
 
-    setTimeout(updateLive, 900000);
+    setTimeout(() => {
+      updateLive(organisation);
+    }, 900000);
   }
 
-  function updateFuture() {
+  function updateFuture(organisation) {
     for (let i = 0; i < 30; i++) {
       const end = moment().add(1 * (i + 1), 'days').endOf('day');
       const start = end.clone().add(-1, 'days').startOf('day');
@@ -73,14 +75,15 @@ MongoClient.connect(mongoDbUri, {
         schedule(db).updateRange(
           start,
           end,
+          organisation,
         ).then((result) => {
           const { error } = result;
 
           if (error) {
             logger.error(`Error occurred while retrieving jobs: ${error}`);
           } else {
-            notifications(db).processNotifications();
-            reports(db).processReports();
+            notifications(db, organisation).processNotifications();
+            reports(db, organisation).processReports();
           }
         }).catch((err) => {
           logger.error(`Error occurred while updating jobs: ${err}`);
@@ -88,10 +91,12 @@ MongoClient.connect(mongoDbUri, {
       });
     }
 
-    setTimeout(updateFuture, 1000 * 60 * 60 * 24);
+    setTimeout(() => {
+      updateFuture(organisation);
+    }, 1000 * 60 * 60 * 24);
   }
 
-  function updatePast() {
+  function updatePast(organisation) {
     for (let i = 0; i < 30; i++) {
       const start = moment().add(-1 * (i + 1), 'days').startOf('day');
       const end = start.clone().endOf('day');
@@ -102,14 +107,15 @@ MongoClient.connect(mongoDbUri, {
         schedule(db).updateRange(
           start,
           end,
+          organisation,
         ).then((result) => {
           const { error } = result;
 
           if (error) {
             logger.error(`Error occurred while retrieving jobs: ${error}`);
           } else {
-            notifications(db).processNotifications();
-            reports(db).processReports();
+            notifications(db, organisation).processNotifications();
+            reports(db, organisation).processReports();
           }
         }).catch((err) => {
           logger.error(`Error occurred while updating jobs: ${err}`);
@@ -117,12 +123,22 @@ MongoClient.connect(mongoDbUri, {
       });
     }
 
-    setTimeout(updatePast, 1000 * 60 * 60 * 24);
+    setTimeout(() => {
+      updatePast(organisation);
+    }, 1000 * 60 * 60 * 24);
   }
 
-  updateLive();
-  updatePast();
-  updateFuture();
+  db.collection('organisations').find({}).toArray()
+    .then((organisations) => {
+      organisations.forEach((organisation) => {
+        updateLive(organisation);
+        updatePast(organisation);
+        updateFuture(organisation);
+      });
+    })
+    .catch((err) => {
+      logger.error(`Error while getting organisations: ${err}`);
+    });
 });
 
 http.createServer((req, res) => {

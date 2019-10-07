@@ -1,32 +1,39 @@
 require('dotenv').config();
 const logger = require('logdown')('email');
-const mailgunModule = require('mailgun-js');
+const sgMail = require('@sendgrid/mail');
 
-const { mailgunApiKey, mailgunDomain, from } = process.env;
+const { SENDGRID_API_KEY } = process.env;
 
-const mailgun = mailgunModule({ apiKey: mailgunApiKey, domain: mailgunDomain });
+sgMail.setApiKey(SENDGRID_API_KEY);
 
-module.exports = () => {
-  async function sendEmail(companyName, subject, text, html, destination, inline) {
-    try {
-      const result = await mailgun.messages().send({
-        from: `"⚠️ ${companyName} Alerts" <${from}>`,
-        to: `${destination}`,
-        subject,
-        text,
-        html,
-        inline,
-      });
+logger.state.isEnabled = true;
 
-      logger.info(`Sending email to ${destination}`);
-      return { error: result.status === 200 };
-    } catch (err) {
-      logger.error(`Error while sending email: ${err}`);
-      return { error: err };
-    }
+async function sendEmail(companyName, subject, text, html, from, destination, inline) {
+  const msg = {
+    to: destination,
+    from: `"⚠️ ${companyName} Alerts" <${from}>`,
+    subject,
+    text,
+    html,
+  };
+  const result = {
+    error: null,
+    sent: false,
+  };
+
+  try {
+    logger.info('Attempting to send email');
+    await sgMail.send(msg);
+
+    result.sent = true;
+  } catch (err) {
+    logger.error(`Error while sending email: ${err}`);
+    result.error = err;
   }
 
-  return {
-    sendEmail,
-  };
+  return result;
+}
+
+module.exports = {
+  sendEmail,
 };

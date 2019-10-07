@@ -5,24 +5,27 @@ const { diff } = require('deep-object-diff');
 const logger = require('logdown')('schedule');
 
 const update = require('./update');
-const bigChange = require('./big-change')(process.env.bcUsername, process.env.bcPassword, process.env.bcApiKey);
+const bigChange = require('./big-change');
 
 logger.state.isEnabled = true;
 
 module.exports = (db) => {
-  const updateRange = async (start, end) => {
+  const updateRange = async (start, end, organisation) => {
     const result = {
       error: null,
     };
 
     logger.info(`----- UPDATE ${start.format('DD/MM/YYYY HH:mm:ss')} to ${end.format('DD/MM/YYYY HH:mm:ss')}`);
     try {
-      const { data, err } = await bigChange.getJobs(start, end);
+      const { bcUsername, bcPassword, bcApiKey } = organisation;
+      const { data, err } = await bigChange(bcUsername, bcPassword, bcApiKey).getJobs(start, end);
+      await update(bcUsername, bcPassword, bcApiKey).getFlags(db);
+      await update(bcUsername, bcPassword, bcApiKey).getResources(db);
 
       if (!err && data instanceof Array) {
         const todayUpdates = data.map(async (newJob) => {
           const savedJob = await db.collection('jobs').findOne({ JobId: newJob.JobId });
-          const updatedJob = await update.updateJob({
+          const updatedJob = await update(bcUsername, bcPassword, bcApiKey).updateJob({
             ...savedJob,
             ...newJob,
           });

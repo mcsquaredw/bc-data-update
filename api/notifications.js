@@ -1,7 +1,7 @@
 require('dotenv').config();
 const moment = require('moment');
 const logger = require('logdown')('notifications');
-const emailModule = require('./email');
+const email = require('./email');
 const emailTemplateModule = require('./email-template');
 const headerTemplate = require('./email-template/header-template');
 const notificationTemplate = require('./email-template/notification-template');
@@ -9,13 +9,12 @@ const utils = require('./utils');
 
 logger.state.isEnabled = true;
 
-module.exports = (db) => {
-  const emailer = emailModule();
+module.exports = (db, organisation) => {
+  const { mailFrom, notificationsTo, techSupportEmail } = organisation;
+  let { companyLogo, name } = organisation;
 
   async function processNotification(job, emailSubject, emailText, notificationType, colour) {
     try {
-      const { techSupportEmail, to } = process.env;
-      let { companyName, companyLogo } = process.env;
       let notificationDocument = await db
         .collection('notifications')
         .findOne({ notificationType, jobId: job.JobId });
@@ -31,7 +30,7 @@ module.exports = (db) => {
         switch (job.Cust_Company) {
           case 'Chatsworth':
             inline.push(`${__dirname}/email-template/img/chatsworth-logo.png`);
-            companyName = 'Chatsworth Garage Doors';
+            name = 'Chatsworth Garage Doors';
             companyLogo = 'chatsworth-logo.png';
             break;
           default:
@@ -39,18 +38,19 @@ module.exports = (db) => {
             break;
         }
 
-        emailResult = await emailer.sendEmail(
-          companyName,
+        emailResult = await email.sendEmail(
+          name,
           emailSubject,
           emailText,
           emailTemplateModule(
-            companyName,
+            name,
             companyLogo,
             techSupportEmail,
             headerTemplate(emailSubject, colour),
             notificationTemplate(job),
           ),
-          to,
+          mailFrom,
+          notificationsTo,
           inline,
         );
 
