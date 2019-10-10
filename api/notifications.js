@@ -25,6 +25,7 @@ module.exports = (db, organisation) => {
         notificationDocument = {
           notificationType,
           jobId: job.JobId,
+          actioned: false,
         };
 
         switch (job.Cust_Company) {
