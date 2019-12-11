@@ -10,7 +10,7 @@ const bigChange = require('./big-change');
 logger.state.isEnabled = true;
 
 module.exports = (db) => {
-  const updateRange = async (start, end, organisation) => {
+  const updateRange = async (start, end, organisation, updateFlags, updateResources) => {
     const result = {
       error: null,
     };
@@ -19,8 +19,14 @@ module.exports = (db) => {
     try {
       const { bcUsername, bcPassword, bcApiKey } = organisation;
       const { data, err } = await bigChange(bcUsername, bcPassword, bcApiKey).getJobs(start, end);
-      await update(bcUsername, bcPassword, bcApiKey).getFlags(db);
-      await update(bcUsername, bcPassword, bcApiKey).getResources(db);
+
+      if (updateFlags) {
+        await update(bcUsername, bcPassword, bcApiKey).getFlags(db);
+      }
+
+      if (updateResources) {
+        await update(bcUsername, bcPassword, bcApiKey).getResources(db);
+      }
 
       if (!err && data instanceof Array) {
         const todayUpdates = data.map(async (newJob) => {

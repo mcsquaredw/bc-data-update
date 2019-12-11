@@ -19,11 +19,13 @@ const { MONGODB_URI, MONGODB_DBNAME } = process.env;
 
 logger.state.isEnabled = true;
 
-function update(db, start, end, organisation) {
+function update(db, start, end, organisation, updateFlags, updateResources) {
   schedule(db).updateRange(
     start,
     end,
     organisation,
+    updateFlags,
+    updateResources,
   ).then((result) => {
     const { error } = result;
 
@@ -46,21 +48,21 @@ MongoClient.connect(MONGODB_URI, {
 
   const db = client.db(MONGODB_DBNAME);
 
-  function updateLive(organisation) {
+  function updateLive(organisation, updateFlags, updateResources) {
     const now = moment();
     const weekday = now.isoWeekday();
     const hour = now.hour();
     const start = now.clone().startOf('day');
     const end = start.clone().endOf('day');
 
-    // if (weekday < 6 && hour > 7 && hour < 19) {
-    update(db, start, end, organisation);
-    // } else {
-    logger.info('Will not auto-update jobs for today out of office hours or at weekends - daily past and future job updates will still occur');
-    // }
+    if (weekday < 6 && hour > 7 && hour < 19) {
+      update(db, start, end, organisation, updateFlags, updateResources);
+    } else {
+      logger.info('Will not auto-update jobs for today out of office hours or at weekends - daily past and future job updates will still occur');
+    }
 
     setTimeout(() => {
-      updateLive(organisation);
+      updateLive(organisation, false, true);
     }, 900000);
   }
 
