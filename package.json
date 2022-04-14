@@ -19,7 +19,7 @@
   "homepage": "https://github.com/mcsquaredw/bc-data-update#readme",
   "dependencies": {
     "@sendgrid/mail": "^6.4.0",
-    "async": "^3.1.0",
+    "async": "^3.2.2",
     "async-sema": "^3.0.1",
     "axios": "^0.19.0",
     "chai": "^4.2.0",
